@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Last Frontier</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #222;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.5s, color 0.5s;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        #container {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+        }
+        #resources, #actions, #log {
+            width: 30%;
+        }
+        button {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #444;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #555;
+        }
+        #log p {
+            margin: 5px 0;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .building-section {
+            margin-top: 20px;
+        }
+        #themeToggle {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+        }
+        .cooldown {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <button id="themeToggle" onclick="toggleTheme()">Switch Theme</button>
+    
+    <h1>The Last Frontier</h1>
+    <div id="container">
+        <div id="resources" class="section">
+            <h2>Resources</h2>
+            <p>Energy: <span id="energy">0</span></p>
+            <p>Minerals: <span id="minerals">0</span></p>
+            <p>Food: <span id="food">0</span></p>
+            <p>Colonists: <span id="colonists">10</span></p>
+            <p>Defense: <span id="defense">0</span></p>
+        </div>
+
+        <div id="actions" class="section">
+            <h2>Actions</h2>
+            <button id="mineBtn" onclick="mineMinerals()">Mine Minerals</button>
+            <button id="energyBtn" onclick="generateEnergy()">Generate Energy</button>
+            <button id="farmBtn" onclick="farmFood()">Farm Food</button>
+            <button id="exploreBtn" onclick="explore()">Explore</button>
+            <button id="researchBtn" onclick="upgradeTech()">Research Technology</button>
+        </div>
+
+        <div id="log" class="section">
+            <h2>Exploration Log</h2>
+            <div id="exploration-log"></div>
+        </div>
+    </div>
+
+    <div id="container">
+        <div id="buildings" class="section building-section">
+            <h2>Buildings</h2>
+            <button id="habitatBtn" onclick="buildHabitat()">Build Habitat (50 minerals, 50 food)</button>
+            <button id="defenseBtn" onclick="buildDefense()">Build Defense (100 minerals)</button>
+            <button id="farmBuildBtn" onclick="buildFarm()">Build Farm (50 minerals, 30 energy)</button>
+        </div>
+
+        <div id="achievements" class="section building-section">
+            <h2>Achievements</h2>
+            <div id="achievement-log">No achievements yet</div>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        let energy = 0;
+        let minerals = 0;
+        let food = 0;
+        let colonists = 10;
+        let techLevel = 1;
+        let defense = 0;
+        let cooldowns = {
+            mine: false,
+            energy: false,
+            food: false,
+            explore: false,
+            research: false
+        };
+
+        // Theme control
+        let isDarkTheme = true;
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.style.backgroundColor = isDarkTheme ? '#222' : '#fff';
+            document.body.style.color = isDarkTheme ? '#fff' : '#000';
+        }
+
+        // Basic resource generation functions with cooldown
+        function mineMinerals() {
+            if (!cooldowns.mine) {
+                startCooldown('mine', 3000);
+                let mined = Math.floor(Math.random() * 10 * techLevel) + 5;
+                minerals += mined;
+                updateUI();
+                logAction(`Mined ${mined} minerals.`);
+            }
+        }
+
+        function generateEnergy() {
+            if (!cooldowns.energy) {
+                startCooldown('energy', 3000);
+                let generated = Math.floor(Math.random() * 10 * techLevel) + 3;
+                energy += generated;
+                updateUI();
+                logAction(`Generated ${generated} energy.`);
+            }
+        }
+
+        function farmFood() {
+            if (!cooldowns.food) {
+                startCooldown('food', 3000);
+                let farmed = Math.floor(Math.random() * 8 * techLevel) + 4;
+                food += farmed;
+                updateUI();
+                logAction(`Farmed ${farmed} food.`);
+            }
+        }
+
+        // Exploration logic with random events
+        function explore() {
+            if (!cooldowns.explore) {
+                startCooldown('explore', 5000);
+                const events = [
+                    { message: "Found a mineral-rich asteroid!", reward: { minerals: 20 } },
+                    { message: "Discovered an alien relic!", reward: { tech: 1 } },
+                    { message: "Encountered hostile aliens! Lost a colonist.", reward: { colonists: -1 } },
+                    { message: "Found an energy crystal! Boosted energy reserves.", reward: { energy: 30 } },
+                    { message: "Found a fertile land! Boosted food reserves.", reward: { food: 15 } }
+                ];
+
+                const event = events[Math.floor(Math.random() * events.length)];
+                logAction(event.message);
+
+                // Apply rewards
+                if (event.reward.minerals) minerals += event.reward.minerals;
+                if (event.reward.energy) energy += event.reward.energy;
+                if (event.reward.food) food += event.reward.food;
+                if (event.reward.colonists) {
+                    colonists += event.reward.colonists;
+                    if (event.reward.colonists < 0) {
+                        logAction("Defensive measures were insufficient!");
+                    }
+                }
+                if (event.reward.tech) techLevel += event.reward.tech;
+
+                // Alien attack probability
+                if (Math.random() < 0.3) {
+                    alienAttack();
+                }
+
+                updateUI();
+            }
+        }
+
+        function upgradeTech() {
+            if (!cooldowns.research && minerals >= 50 && energy >= 50) {
+                startCooldown('research', 8000);
+                minerals -= 50;
+                energy -= 50;
+                techLevel += 1;
+                logAction("Researched new technology! Tech level is now " + techLevel);
+                updateUI();
+            } else {
+                logAction("Not enough resources to research new technology.");
+            }
+        }
+
+        // Alien attack event
+        function alienAttack() {
+            logAction("Aliens attacked your colony!");
+            if (defense > 0) {
+                defense -= 10;
+                logAction("Your defenses reduced the impact of the attack!");
+            } else {
+                colonists -= 1;
+                logAction("You lost a colonist in the attack!");
+            }
+            updateUI();
+        }
+
+        // Building functions
+        function buildHabitat() {
+            if (minerals >= 50 && food >= 50) {
+                minerals -= 50;
+                food -= 50;
+                colonists += 5; // Increase colonist capacity
+                logAction("Built a new Habitat. +5 Colonists capacity.");
+                updateUI();
+            } else {
+                logAction("Not enough resources to build a Habitat.");
+            }
+        }
+
+        function buildDefense() {
+            if (minerals >= 100) {
+                minerals -= 100;
+                defense += 20; // Increase defense
+                logAction("Built defense systems. +20 Defense.");
+                updateUI();
+            } else {
+                logAction("Not enough minerals to build Defense.");
+            }
+        }
+
+        function buildFarm() {
+            if (minerals >= 50 && energy >= 30) {
+                minerals -= 50;
+                energy -= 30;
+                food += 20; // Increase food production
+                logAction("Built a new Farm. +20 Food.");
+                updateUI();
+            } else {
+                logAction("Not enough resources to build a Farm.");
+            }
+        }
+
+        // Log action with 10-line limit
+        function logAction(message) {
+            const log = document.getElementById('exploration-log');
+            const p = document.createElement('p');
+            p.textContent = message;
+            log.appendChild(p);
+
+            // Remove old log entries
+            while (log.children.length > 10) {
+                log.removeChild(log.firstChild);
+            }
+        }
+
+        // Update UI elements
+        function updateUI() {
+            document.getElementById('energy').innerText = energy;
+            document.getElementById('minerals').innerText = minerals;
+            document.getElementById('food').innerText = food;
+            document.getElementById('colonists').innerText = colonists;
+            document.getElementById('defense').innerText = defense;
+        }
+
+        // Cooldown system
+        function startCooldown(action, duration) {
+            cooldowns[action] = true;
+            const button = document.getElementById(action + 'Btn');
+            button.classList.add('cooldown');
+            setTimeout(() => {
+                cooldowns[action] = false;
+                button.classList.remove('cooldown');
+            }, duration);
+        }
+    </script>
+</body>
+</html>
